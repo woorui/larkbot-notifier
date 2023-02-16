@@ -9,13 +9,18 @@ use axum::{
 use chrono::Local;
 use reqwest::StatusCode;
 use serde_json::json;
-use std::net::SocketAddr;
+use std::{env, net::SocketAddr};
 
 #[tokio::main]
 async fn main() {
     let bot = match larkbot::newbot() {
         Some(bot) => bot,
         None => return,
+    };
+
+    let port = match env::var("PORT") {
+        Ok(port_str) => port_str.parse::<u16>().unwrap(),
+        Err(_) => 3000,
     };
 
     // build our application with a route
@@ -25,7 +30,7 @@ async fn main() {
         .fallback(handler_404)
         .with_state(bot);
     // run it
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
