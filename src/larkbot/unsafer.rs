@@ -34,14 +34,6 @@ impl Unsafer {
 
 #[async_trait]
 impl Bot for Unsafer {
-    // TODO: be sharing rather than clone.
-    fn clone_box(&self) -> Box<dyn Bot + Sync + Send> {
-        Box::new(Unsafer {
-            client: self.client.clone(),
-            url: self.url.clone(),
-        })
-    }
-
     async fn send(self: &Unsafer, event: &Event) -> LarkBotResult {
         match self.request(event).await {
             Ok(result) => result,

@@ -1,6 +1,6 @@
 pub mod unsafer;
 
-use std::env;
+use std::{env, sync::Arc};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Local};
@@ -11,19 +11,12 @@ use unsafer::Unsafer;
 
 #[async_trait]
 pub(crate) trait Bot {
-    fn clone_box(&self) -> Box<dyn Bot + Sync + Send>;
     async fn send(&self, event: &Event) -> LarkBotResult;
 }
 
-impl Clone for Box<dyn Bot + Sync + Send> {
-    fn clone(&self) -> Box<dyn Bot + Sync + Send> {
-        self.clone_box()
-    }
-}
-
-pub(crate) fn newbot() -> Option<Box<(dyn Bot + Sync + Send)>> {
+pub(crate) fn newbot() -> Option<Arc<(dyn Bot + Sync + Send)>> {
     match env::var("BOT_URL") {
-        Ok(url) => Some(Box::new(Unsafer::new(&url))),
+        Ok(url) => Some(Arc::new(Unsafer::new(&url))),
         Err(err) => {
             println!("{}, `BOT_URL`", err.to_string());
             None

@@ -9,7 +9,7 @@ use axum::{
 use chrono::Local;
 use reqwest::StatusCode;
 use serde_json::json;
-use std::{env, net::SocketAddr};
+use std::{env, net::SocketAddr, sync::Arc};
 
 #[tokio::main]
 async fn main() {
@@ -46,7 +46,7 @@ async fn sample() -> Html<&'static str> {
 }
 
 async fn notice(
-    State(bot): State<Box<(dyn larkbot::Bot + Sync + Send + 'static)>>,
+    State(bot): State<Arc<(dyn larkbot::Bot + Sync + Send + 'static)>>,
     Json(event): Json<larkbot::Event>,
 ) -> impl IntoResponse {
     println!("{}: {:?}", Local::now(), event);
