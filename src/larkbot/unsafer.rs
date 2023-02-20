@@ -21,7 +21,7 @@ impl Unsafer {
     async fn request(self: &Unsafer, event: &Event) -> Result<LarkBotResult> {
         let result: LarkBotResult = self
             .client
-            .post(self.url.clone())
+            .post(self.url.as_ref())
             .json(&parse_to_lark_request(event))
             .send()
             .await?
