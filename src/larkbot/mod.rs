@@ -10,17 +10,23 @@ use serde_json;
 use unsafer::Unsafer;
 
 #[async_trait]
-pub(crate) trait Bot {
+pub trait Bot {
     async fn send(&self, event: &Event) -> LarkBotResult;
 }
 
-pub(crate) fn newbot() -> Option<Arc<(dyn Bot + Sync + Send)>> {
-    match env::var("BOT_URL") {
-        Ok(url) => Some(Arc::new(Unsafer::new(&url))),
-        Err(err) => {
-            println!("{}, `BOT_URL`", err.to_string());
-            None
-        }
+pub enum BotType {
+    Unsafer,
+}
+
+pub fn newbot(types: BotType) -> Option<Arc<(dyn Bot + Sync + Send)>> {
+    match types {
+        BotType::Unsafer => match env::var("BOT_URL") {
+            Ok(url) => Some(Arc::new(Unsafer::new(&url))),
+            Err(err) => {
+                println!("{}, `BOT_URL`", err.to_string());
+                None
+            }
+        },
     }
 }
 
@@ -39,7 +45,7 @@ pub struct LarkBotResult {
     pub data: serde_json::Value,
 }
 
-pub fn parse_to_lark_request(event: &Event) -> serde_json::Value {
+fn parse_to_lark_request(event: &Event) -> serde_json::Value {
     serde_json::json!({
         "msg_type": "post",
         "content": {

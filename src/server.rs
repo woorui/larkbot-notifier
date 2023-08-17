@@ -13,7 +13,7 @@ use std::{env, net::SocketAddr, sync::Arc};
 
 #[tokio::main]
 async fn main() {
-    let bot = match larkbot::newbot() {
+    let bot = match larkbot::newbot(larkbot::BotType::Unsafer) {
         Some(bot) => bot,
         None => return,
     };
