@@ -1,0 +1,7 @@
+- name: Failed Ping
+  duration: 30
+  cmd: ["ping", "aaa"]
+
+- name: Successful ls
+  duration: 30
+  cmd: ["ls", "-al"]
