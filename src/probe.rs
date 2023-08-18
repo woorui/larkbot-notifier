@@ -1,14 +1,15 @@
 mod larkbot;
 use chrono::Local;
+use futures::future;
 use larkbot::Bot;
 use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tokio::time::sleep;
-use tokio::{self, signal};
+use std::time::Duration;
+use tokio::task::JoinHandle;
+use tokio::time::interval;
 
 use serde::Deserialize;
 
@@ -32,43 +33,35 @@ async fn main() {
         None => return,
     };
 
-    let running = Arc::new(AtomicBool::new(true));
+    let task_list :Vec<JoinHandle<()>>= configs
+        .into_iter()
+        .filter(|config| config.cmd.len() > 1)
+        .map(|config| {
+            let bot = Arc::clone(&bot);
 
-    let running_clone = running.clone();
+            return tokio::spawn(async move {
+                // clone for the loop
+                let config_clone = config.clone();
 
-    tokio::spawn(async move {
-        signal::ctrl_c().await.unwrap();
-        running_clone.store(false, std::sync::atomic::Ordering::SeqCst);
-    });
+                let mut ticker = interval(Duration::from_secs(config_clone.duration));
 
-    let mut task_list: Vec<_> = Vec::new();
-    for config in configs {
-        if config.cmd.len() < 1 {
-            continue;
-        }
+                loop {
+                    let bot_clone = Arc::clone(&bot);
 
-        let config_clone = config.clone();
-        let running_clone = Arc::clone(&running);
+                    tokio::select! {
+                        _ = ticker.tick() => {
+                            run_command(bot_clone, &config_clone.name, config_clone.cmd.clone()).await;
+                        }
+                        _ = tokio::signal::ctrl_c() => {
+                            break;
+                        }
+                    };
+                };
+            })
+        })
+        .collect();
 
-        // clone for the loop
-        let bot_clone = Arc::clone(&bot);
-
-        let task = tokio::spawn(async move {
-            while running_clone.load(Ordering::SeqCst) {
-                // clone for the spawn
-                let bot_clone = Arc::clone(&bot_clone);
-
-                run_command(bot_clone, &config_clone.name, config_clone.cmd.clone()).await;
-
-                sleep(std::time::Duration::from_secs(config_clone.duration)).await;
-            }
-        });
-        task_list.push(task);
-    }
-
-    for task in task_list {
-        task.await.unwrap();
-    }
+    future::join_all(task_list).await;
 
     println!("probe exit");
 }
