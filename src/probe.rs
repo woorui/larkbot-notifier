@@ -26,8 +26,6 @@ async fn main() {
 
     let configs = read_config_from_file(config_file_path);
 
-    println!("{:?}", configs);
-
     let bot = match larkbot::newbot(larkbot::BotType::Unsafer) {
         Some(bot) => bot,
         None => return,
